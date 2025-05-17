@@ -1,0 +1,31 @@
+datasource db {
+  provider = "cockroachdb" // or "mysql" or "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               String    @id @default(uuid())
+  name             String
+  email            String    @unique
+  password         String?
+  position         String?
+  profileImage     String?
+  resetToken       String?   @unique
+  resetTokenExpiry DateTime?
+  isVerified       Boolean   @default(false)
+  userType         UserType  @default(STUDENT)
+  varificationCode String?
+  varificationCodeExpiry DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+enum UserType {
+  STUDENT
+  FACULTY
+  ADMIN
+}
