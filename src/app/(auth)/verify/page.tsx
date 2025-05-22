@@ -35,12 +35,17 @@ console.log(res.data);
           redirect: false,
           email,
           password: res.data.password, // Use only if you send it back safely, else ask user to enter it
+          callbackUrl: "/dashboard",
         });
         console.log("res data", res.data);
         
-        if (loginRes?.ok) {
-          router.push(`/dashboard`);
-        } else {
+       if (loginRes?.ok) {
+  // Give time for token cookie to be set
+  setTimeout(() => {
+    router.push("/dashboard");
+  }, 500); // try 500ms–1000ms
+}
+ else {
           setMessage("Verification succeeded but login failed.");
         }
       } else {
