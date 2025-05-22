@@ -22,10 +22,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    let result;
 
     
-      result = await prisma.userDetails.update({
+    const   result = await prisma.userDetails.update({
         where: { email },
         data: { userType },
       });
