@@ -47,8 +47,8 @@ export async function POST(req: Request) {
       name,
       password: hashedPassword,
       isVerified: false,
-      varificationCode: otp,
-      varificationCodeExpiry: new Date(Date.now() + 1000 * 60 * 60), // 1 hour
+      verificationCode: otp,
+      verificationCodeExpiry: new Date(Date.now() + 1000 * 60 * 60), // 1 hour
     },
   });
 

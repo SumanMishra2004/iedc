@@ -17,7 +17,7 @@ console.log("Email:", email);
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  if (user.varificationCode !== code) {
+  if (user.verificationCode !== code) {
     return NextResponse.json({ error: "Invalid verification code" }, { status: 400 });
   }
 
@@ -25,7 +25,7 @@ console.log("Email:", email);
     where: { email },
     data: {
       isVerified: true,
-      varificationCode: null,
+      verificationCode: null,
     },
   });
 
