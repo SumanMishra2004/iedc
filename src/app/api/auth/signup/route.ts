@@ -1,7 +1,7 @@
 // /api/auth/signup.ts
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { hashPassword } from "@/utils/hash";
+import { comparePassword, hashPassword } from "@/utils/hash";
 import { sendEmail } from "@/utils/mailer";
 import { z } from "zod";
 
@@ -35,7 +35,10 @@ export async function POST(req: Request) {
 
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
-    return NextResponse.json({ error: "Email already exists" }, { status: 400 });
+    if (existingUser.password && await comparePassword(password, existingUser.password)) {
+      // handle case if password matches (add your logic here)
+      return NextResponse.json({ message: "Already registered, logged in." });
+    }
   }
 
   const hashedPassword = await hashPassword(password);
@@ -46,6 +49,7 @@ export async function POST(req: Request) {
       email,
       name,
       password: hashedPassword,
+      profileImage:"https://www.pngfind.com/pngs/m/610-6104451_image-placeholder-png-user-profile-placeholder-image-png.png",
       isVerified: false,
       verificationCode: otp,
       verificationCodeExpiry: new Date(Date.now() + 1000 * 60 * 60), // 1 hour

@@ -1,33 +1,23 @@
-// /src/app/api/auth/varify/route.ts
-import { NextResponse } from "next/server";
+// /api/auth/verify.ts
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const { email, code } = await req.json();
-console.log("Email:", email);
-  console.log("Code:", code);
 
   if (!email || !code) {
-    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    return NextResponse.json({ message: "Missing email or OTP code" }, { status: 400 });
   }
 
-  let user = await prisma.user.findUnique({ where: { email } });
-
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user || user.verificationCode !== code) {
+    return NextResponse.json({ message: "Invalid code or user not found" }, { status: 401 });
   }
 
-  if (user.verificationCode !== code) {
-    return NextResponse.json({ error: "Invalid verification code" }, { status: 400 });
-  }
-
-  user = await prisma.user.update({
+  await prisma.user.update({
     where: { email },
-    data: {
-      isVerified: true,
-      verificationCode: null,
-    },
+    data: { isVerified: true, verificationCode: null },
   });
 
-  return NextResponse.json({ message: "Email verified successfully",userId:user.id },{ status: 200 });
+  return NextResponse.json({ message: "Email verified successfully" });
 }

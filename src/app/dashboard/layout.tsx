@@ -32,7 +32,7 @@ export default function RootLayout({
     const fetchUserDetails = async () => {
       try {
         if (session?.user?.email) {
-          const res = await axios.get(`/api/user/getUser/?email=${session.user.email}`);
+          const res = await axios.get(`/api/user/getUser?email=${session.user.email}`);
           setUserDetails(res.data);
         }
       } catch (error) {

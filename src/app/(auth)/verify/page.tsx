@@ -1,8 +1,8 @@
 "use client";
+
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
-import { signIn } from "next-auth/react";
 
 export default function VerifyPage() {
   const router = useRouter();
@@ -19,41 +19,24 @@ export default function VerifyPage() {
     setMessage("");
 
     try {
-        const code = otp;
-        
       const res = await axios.post("/api/auth/verify", {
         email,
-        code,
+        code: otp,
       });
-console.log(res.data);
 
-      if (res.status === 200) { 
-        setMessage("OTP verified! Logging in...");
-
-        // Automatically sign in the user
-        const loginRes = await signIn("credentials", {
-          redirect: false,
-          email,
-          password: res.data.password, // Use only if you send it back safely, else ask user to enter it
-          callbackUrl: "/dashboard",
-        });
-        console.log("res data", res.data);
-        
-       if (loginRes?.ok) {
-  // Give time for token cookie to be set
-  setTimeout(() => {
-    router.push("/dashboard");
-  }, 500); // try 500ms–1000ms
-}
- else {
-          setMessage("Verification succeeded but login failed.");
-        }
+      if (res.status === 200) {
+        setMessage("OTP verified successfully! Redirecting to sign-in...");
+        setTimeout(() => {
+          router.push("/login"); // Or wherever your sign-in page is
+        }, 1500);
       } else {
-        setMessage(res.data.message || "Verification failed");
+        setMessage(res.data.message || "Verification failed.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setMessage("Something went wrong while verifying.");
+      setMessage(
+        err.response?.data?.message || "Something went wrong while verifying."
+      );
     } finally {
       setLoading(false);
     }
@@ -61,10 +44,13 @@ console.log(res.data);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <form onSubmit={handleVerify} className="bg-white p-6 rounded shadow-md w-full max-w-sm text-black">
+      <form
+        onSubmit={handleVerify}
+        className="bg-white p-6 rounded shadow-md w-full max-w-sm text-black"
+      >
         <h1 className="text-2xl font-bold mb-4">Verify Your Email</h1>
 
-        <label htmlFor="otp" className="block text-sm font-medium mb-2 text-black">
+        <label htmlFor="otp" className="block text-sm font-medium mb-2">
           Enter the OTP sent to your email
         </label>
         <input
@@ -72,7 +58,7 @@ console.log(res.data);
           id="otp"
           value={otp}
           onChange={(e) => setOtp(e.target.value)}
-          className="w-full border border-gray-300 rounded px-3 py-2 mb-4 text-black"
+          className="w-full border border-gray-300 rounded px-3 py-2 mb-4"
           placeholder="123456"
           required
         />

@@ -1,122 +1,92 @@
-import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
-
+import { comparePassword } from "@/utils/hash";
 import { NextAuthOptions } from "next-auth";
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
     CredentialsProvider({
-      name: "Sign in",
-      id: "credentials",
+      name: "Credentials",
       credentials: {
-        email: {
-          label: "Email",
-          type: "email",
-          placeholder: "example@example.com",
-        },
+        email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials, req) {
-        if (!credentials?.email || !credentials.password) {
-          return null;
-        }
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials.password) return null;
 
         const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
+          where: { email: credentials.email },
         });
 
-        if (!user) {
-          return null;
+        if (!user || !user.password) return null;
+
+        const isValid = await comparePassword(credentials.password, user.password);
+        if (!isValid) return null;
+
+        if (!user.isVerified) return null;
+
+        const userDetails = await prisma.userDetails.findUnique({
+          where: { email: credentials.email },
+        });
+
+
+      console.log("User details:", userDetails);
+      
+
+        if(userDetails){
+          await prisma.user.update({
+            where:{email:credentials.email},
+            data:{
+              userType:userDetails.userType,
+              isVerified:true,
+            }
+          })
         }
-
-  // Get userType from userdetails
-  const userDetails = await prisma.userDetails.findUnique({
-    where: { email: credentials.email },
-  });
-
         return {
           id: user.id,
           email: user.email,
-          userType: userDetails?.userType||'STUDENT', // Ensure userType is included as required by the User interface
+          userType: userDetails?.userType || "STUDENT",
+          name: user.name,
         };
       },
     }),
+    // other providers, e.g. GoogleProvider here
   ],
-  pages: {
-    signIn: "/login",
-    error: "/auth/error",
-  },
+
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 30 * 24 * 60 * 60,
   },
+
   callbacks: {
-    async signIn({ user, account, profile }) {
-      if (account?.provider === "google") {
-        const dbUser = await prisma.user.findUnique({
-          where: { email: user.email! },
-        });
-
-        if (!dbUser) {
-          // Fetch userType from userdetails
-          const userDetails = await prisma.userDetails.findUnique({
-            where: { email: user.email! },
-          });
-
-          await prisma.user.create({
-            data: {
-              email: user.email!,
-              name: user.name || "Google User",
-              profileImage: (profile as any)?.picture || null,
-              isVerified: true,
-              userType: userDetails?.userType || "STUDENT", // default fallback
-            },
-          });
-        }
-      }
-      return true;
-    },
-
     async jwt({ token, user }) {
       if (user) {
-        // On initial sign-in (credentials or google), user object exists
         token.id = user.id;
         token.email = user.email;
-
-        if (user.userType) {
-          // Credentials provider passes userType directly
-          token.userType = user.userType;
-        } else {
-          // For Google provider, user.userType may be missing
-          // Fetch userType from DB based on email
-          const dbUser = await prisma.user.findUnique({
-            where: { email: user.email! },
-          });
-          console.log("DB User:", dbUser);
-
-          token.userType = dbUser?.userType || "STUDENT"; // Default to STUDENT if not found
-        }
+        token.userType = user.userType;
+        token.name = user.name;
       }
       return token;
     },
 
     async session({ session, token }) {
-      return {
-        user: {
-          id: token.id as string,
-          email: token.email as string,
-          userType: token.userType as string,
-        },
-        expires: session.expires,
-      };
+  return {
+    ...session,
+    user: {
+      id: token.id as string,
+      email: token.email as string,
+      name: token.name as string,
+      userType: token.userType as string,
     },
+  };
+}
+
   },
+
+  pages: {
+    signIn: "/signup",
+    error: "/auth/error",
+  },
+
   secret: process.env.NEXTAUTH_SECRET,
 };

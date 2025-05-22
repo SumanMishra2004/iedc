@@ -1,16 +1,69 @@
+"use client"; // if you're using Next.js App Router, enable client component
 
+import { useState } from "react";
+import { signIn } from "next-auth/react";
 
-import { LoginForm } from "@/components/login-form"
-export default function LoginPage() {
+export default function SignInForm() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorMsg("");
+
+    const result = await signIn("credentials", {
+      redirect: false, // prevent automatic redirect
+      email,
+      password,
+    });
+
+    if (result?.error) {
+      setErrorMsg("Invalid email or password");
+    } else if (result?.ok) {
+      // Successful sign-in, redirect or show something
+      window.location.href = "/dashboard"; // or use router.push
+    }
+  }
+
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-[url('/gpu.jpg')] bg-cover bg-no-repeat">
-      {/* Gradient Overlay */}
-      <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_center,_rgba(0,0,0,0)_0%,_rgba(0,0,0,0.8)_100%)]" />
+    <form onSubmit={handleSubmit} className="max-w-sm mx-auto p-4">
+      <h2 className="text-xl font-semibold mb-4">Sign In</h2>
 
-      {/* Login Content */}
-      <div className="relative z-20 flex w-full max-w-sm flex-col gap-6 box-shadow: rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px, rgba(10, 37, 64, 0.35) 0px -2px 6px 0px inset;">
-        <LoginForm />
-      </div>
-    </div>
+      <label htmlFor="email" className="block mb-1">
+        Email
+      </label>
+      <input
+        id="email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+        className="w-full mb-4 px-3 py-2 border rounded"
+      />
+
+      <label htmlFor="password" className="block mb-1">
+        Password
+      </label>
+      <input
+        id="password"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+        className="w-full mb-4 px-3 py-2 border rounded"
+      />
+
+      {errorMsg && (
+        <p className="mb-4 text-red-600 font-medium">{errorMsg}</p>
+      )}
+
+      <button
+        type="submit"
+        className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        Sign In
+      </button>
+    </form>
   );
 }
