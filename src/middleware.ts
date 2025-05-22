@@ -10,7 +10,9 @@ export async function middleware(req: NextRequest) {
 
   // Fetch the token/session (null if not logged in)
   const token = await getToken({ req, secret })
-
+console.log("Token.userType:", token?.userType);
+console.log("Token.email:", token?.email);
+  console.log("Token:", token);
   // If user is NOT logged in
   if (!token) {
     // Block /dashboard and /admin routes if not logged in
@@ -37,7 +39,7 @@ export async function middleware(req: NextRequest) {
 
   // Restrict /admin routes only for usertype ADMIN
   if (pathname.startsWith('/admin')) {
-    if (token.usertype !== 'ADMIN') {
+    if (token.userType !== 'ADMIN') {
       // Redirect non-admin users trying to access admin pages
       const url = req.nextUrl.clone()
       url.pathname = '/dashboard' // or some unauthorized page
