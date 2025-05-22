@@ -1,31 +1,170 @@
-datasource db {
-  provider = "cockroachdb" // or "mysql" or "mongodb"
-  url      = env("DATABASE_URL")
-}
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
-model User {
-  id               String    @id @default(uuid())
-  name             String
-  email            String    @unique
-  password         String?
-  position         String?
-  profileImage     String?
-  resetToken       String?   @unique
-  resetTokenExpiry DateTime?
-  isVerified       Boolean   @default(false)
-  userType         UserType  @default(STUDENT)
-  varificationCode String?
-  varificationCodeExpiry DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+datasource db {
+  provider = "cockroachdb"
+  url      = env("DATABASE_URL")
 }
+
+// User Model (updated to include relationships)
+model User {
+  id                     String      @id @default(uuid())
+  name                   String
+  email                  String      @unique
+  password               String?
+  degree                 String?
+  year                   Int?
+  department             String?
+  university             String?
+  subjectArea            String?
+  position               String?
+  profileImage           String?
+  resetToken             String?     @unique
+  resetTokenExpiry       DateTime?
+  isVerified             Boolean     @default(false)
+  userType               UserType    @default(STUDENT)
+  verificationCode       String?
+  verificationCodeExpiry DateTime?
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  authoredPapers         ResearchPaper[] @relation("AuthorPapers")
+  performedReviews       Review[]
+  assignedAdvisorPapers  PaperAdvisor[]  @relation("AssignedAdvisor")
+  notificationsReceived  Notification[]  @relation("RecipientNotifications")
+  reviewedPapers         ResearchPaper[] @relation("PaperReviewer")
+}
+
 
 enum UserType {
   STUDENT
   FACULTY
   ADMIN
+}
+
+ model UserDetails {
+   id       String   @id @default(uuid())
+   email    String    @unique
+   userType UserType
+ }
+
+model LatestNews {
+  id                 String   @id @default(uuid())
+  title              String
+  content            String
+  createdAt          DateTime @default(now())
+  tags               String[]
+  homePageVisibility Boolean  @default(false)
+}
+enum PaperStatus {
+  UPLOAD
+  ON_REVIEW
+  PUBLISH
+  REJECTED    // Optional: holds rejected state
+  DELETE
+}
+model ResearchPaper {
+  id              String        @id @default(uuid())
+  title           String
+  abstract        String
+  filePath        String
+  currentVersion  Int           @default(1)
+
+  // Authors (students)
+  authors         User[]        @relation("AuthorPapers")
+
+  // Reviewer (faculty, selected from PaperAdvisor list)
+  reviewerId      String
+  reviewer        User         @relation("PaperReviewer", fields: [reviewerId], references: [id])
+
+  status          PaperStatus   @default(UPLOAD)
+  keywords        String[]
+  submissionDate  DateTime      @default(now())
+  lastUpdated     DateTime      @updatedAt
+  rejectionRemark String?
+  rejectionDate   DateTime?
+
+  // Relationships
+  facultyAdvisors PaperAdvisor[]
+  reviews         Review[]
+  notifications   Notification[]
+}
+
+
+// New Model: PaperAdvisor - This is the key to managing multiple faculty approvals
+model PaperAdvisor {
+  id                  String           @id @default(uuid())
+  paperId             String
+  paper               ResearchPaper    @relation(fields: [paperId], references: [id])
+
+  advisorId           String
+  advisor             User             @relation("AssignedAdvisor", fields: [advisorId], references: [id]) // The faculty/admin assigned
+
+  acceptanceStatus    AdvisorAcceptanceStatus @default(PENDING) // New field for advisor's individual decision
+  assignedDate        DateTime         @default(now())
+  decisionDate        DateTime?        // When the advisor made their decision (Accept/Reject)
+  // You might add an optional `remark` here if advisors can give a preliminary remark
+  // remark            String?
+}
+
+enum AdvisorAcceptanceStatus {
+  PENDING    // Advisor has been assigned but not yet accepted/rejected
+  ACCEPTED   // Advisor has accepted to review/advise
+  REJECTED   // Advisor has rejected to review/advise
+}
+
+model Review {
+  id          String       @id @default(uuid())
+  rating      Int?
+  comment     String
+  status      ReviewStatus
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Only reviewer can do this
+  reviewerId  String
+  reviewer    User         @relation(fields: [reviewerId], references: [id])
+
+  paperId     String
+  paper       ResearchPaper @relation(fields: [paperId], references: [id])
+}
+
+enum ReviewStatus {
+  PENDING                 // Review is assigned but not started
+  IN_PROGRESS             // Reviewer has started working on it
+  COMPLETED               // Review is submitted
+  REQUEST_CLARIFICATION   // If reviewer needs more info from author
+}
+model Notification {
+  id           String           @id @default(uuid())
+  message      String
+  type         NotificationType @default(GENERAL)
+  isRead       Boolean          @default(false)     // ✅ Used to track if the user has seen the notification
+  createdAt    DateTime         @default(now())
+  // Recipient (who receives the notification)
+  recipientId  String
+  recipient    User             @relation("RecipientNotifications", fields: [recipientId], references: [id])
+
+  // Related paper (optional)
+  paperId      String?
+  paper        ResearchPaper?   @relation(fields: [paperId], references: [id])
+}
+
+enum NotificationType {
+  GENERAL
+  PAPER_UPLOADED
+  PAPER_UPDATED
+  PAPER_REJECTED
+  PAPER_PUBLISHED
+  PAPER_DELETED
+  REVIEW_ASSIGNED
+  REVIEW_COMPLETED
+  ADVISOR_REQUEST
+  ADVISOR_ACCEPTED
+  ADVISOR_REJECTED
+  PAPER_UNDER_REVIEW_STATUS_CHANGE
 }

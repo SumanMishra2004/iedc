@@ -17,7 +17,7 @@ import {
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
+import { UserTypeSwitcher } from "@/components/user-type-switcher"
 import {
   Sidebar,
   SidebarContent,
@@ -26,36 +26,23 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 
-// This is sample data.
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
-  ],
+import { User } from "@/types/userType"
+import { create } from "domain"
+import { createDecipheriv } from "crypto"
+
+
+export function AppSidebar({ userData,...props }: { userData: User } & React.ComponentProps<typeof Sidebar>,) {
+ 
+  
+  const data = {
+ 
   navMain: [
     {
       title: "Playground",
       url: "#",
       icon: SquareTerminal,
       isActive: true,
+      
       items: [
         {
           title: "History",
@@ -93,6 +80,7 @@ const data = {
     {
       title: "Documentation",
       url: "#",
+      
       icon: BookOpen,
       items: [
         {
@@ -116,6 +104,7 @@ const data = {
     {
       title: "Settings",
       url: "#",
+      access: ["ADMIN", "FACULTY", "STUDENT"],
       icon: Settings2,
       items: [
         {
@@ -136,6 +125,31 @@ const data = {
         },
       ],
     },
+    {
+      title: "Admin Work Panel",
+      url: "#",
+      icon: Settings2,
+      access: ["ADMIN", "FACULTY"],
+      items: [
+        {
+          title: "General",
+          url: "#",
+        },
+        {
+          title: "Team",
+          url: "#",
+        },
+        {
+          title: "Billing",
+          url: "#",
+        },
+        {
+          title: "Limits",
+          url: "#",
+        },
+      ],
+    },
+
   ],
   projects: [
     {
@@ -155,19 +169,17 @@ const data = {
     },
   ],
 }
-
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <UserTypeSwitcher {...userData} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain {...userData} />
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser {...userData} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

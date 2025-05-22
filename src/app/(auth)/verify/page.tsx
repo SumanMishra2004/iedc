@@ -56,7 +56,7 @@ console.log(res.data);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <form onSubmit={handleVerify} className="bg-white p-6 rounded shadow-md w-full max-w-sm">
+      <form onSubmit={handleVerify} className="bg-white p-6 rounded shadow-md w-full max-w-sm text-black">
         <h1 className="text-2xl font-bold mb-4">Verify Your Email</h1>
 
         <label htmlFor="otp" className="block text-sm font-medium mb-2 text-black">

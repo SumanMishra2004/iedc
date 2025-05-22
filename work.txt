@@ -1,0 +1,258 @@
+📝 List of REST Functionalities & API Endpoints
+Here's a breakdown by model:
+
+👤 User Management (Admin & System focus, beyond basic profile updates)
+List Users:
+GET /api/users
+Description: Retrieve a list of all users.
+Query Params: ?userType=STUDENT|FACULTY|ADMIN, ?page=1, ?limit=10, ?isVerified=true|false
+Response: Paginated list of user objects.
+Get Specific User Details:
+GET /api/users/{userId}
+Description: Retrieve details for a specific user.
+Response: User object.
+Admin: Verify User:
+PATCH /api/users/{userId}/verify
+Description: Admin marks a user as verified.
+Request Body: { "isVerified": true }
+Response: Updated user object.
+Admin: Change User Type:
+PATCH /api/users/{userId}/type
+Description: Admin changes a user's type.
+Request Body: { "userType": "FACULTY" | "ADMIN" }
+Response: Updated user object.
+Get Papers Authored by User:
+GET /api/users/{userId}/papers
+Description: Retrieve all research papers authored by a specific user.
+Response: List of ResearchPaper objects.
+Get Reviews Performed by User:
+GET /api/users/{userId}/reviews
+Description: Retrieve all reviews performed by a specific user (Faculty/Admin).
+Response: List of Review objects.
+Get Papers Assigned to User (as Advisor):
+GET /api/users/{userId}/assigned-papers
+Description: Retrieve all papers where this user is an assigned advisor.
+Response: List of PaperAdvisor objects (potentially populated with paper details).
+📋 UserDetails Management (If distinct from main User creation)
+Admin: Create UserDetail Entry (e.g., for pre-registration or invitation list):
+POST /api/user-details
+Description: Admin adds a user's email and type to a list (potentially for invitation or pre-setup).
+Request Body: { "email": "user@example.com", "userType": "FACULTY" }
+Response: Created UserDetails object.
+Admin: List UserDetails:
+GET /api/user-details
+Description: Admin retrieves the list of UserDetails entries.
+Response: List of UserDetails objects.
+Admin: Update UserDetail Entry:
+PUT /api/user-details/{detailsId}
+Description: Admin updates a UserDetail entry.
+Request Body: { "email": "newemail@example.com", "userType": "STUDENT" }
+Response: Updated UserDetails object.
+Admin: Delete UserDetail Entry:
+DELETE /api/user-details/{detailsId}
+Description: Admin removes a UserDetail entry.
+Response: Success message.
+📰 Latest News Management (Primarily Admin)
+Create News Item:
+POST /api/news
+Description: Admin creates a new news item.
+Request Body: { "title": "...", "content": "...", "tags": ["event", "update"], "homePageVisibility": true }
+Response: Created LatestNews object.
+Get All News Items:
+GET /api/news
+Description: Retrieve all news items.
+Query Params: ?homePageVisibility=true, ?page=1, ?limit=10, ?tag=event
+Response: Paginated list of LatestNews objects.
+Get Specific News Item:
+GET /api/news/{newsId}
+Description: Retrieve a single news item by its ID.
+Response: LatestNews object.
+Update News Item:
+PUT /api/news/{newsId}
+Description: Admin updates an existing news item.
+Request Body: { "title": "...", "content": "...", "tags": [], "homePageVisibility": false }
+Response: Updated LatestNews object.
+Delete News Item:
+DELETE /api/news/{newsId}
+Description: Admin deletes a news item.
+Response: Success message.
+📄 Research Paper Management
+Submit New Paper (Author: Student/Faculty):
+POST /api/papers
+Description: Author submits a new research paper. (Handles file upload).
+Request Body: FormData including paper metadata (title, abstract, keywords) and the paper file. authorId will be derived from the authenticated user.
+Response: Created ResearchPaper object.
+Get All Papers (Public/Filtered):
+GET /api/papers
+Description: Retrieve a list of research papers.
+Query Params: ?status=PUBLISHED, ?authorId=..., ?keyword=..., ?page=1, ?limit=10
+Response: Paginated list of ResearchPaper objects.
+Get Specific Paper Details:
+GET /api/papers/{paperId}
+Description: Retrieve details for a specific research paper.
+Response: ResearchPaper object (potentially with author, reviews, advisors populated).
+Download Paper File:
+GET /api/papers/{paperId}/download
+Description: Download the actual file for a research paper.
+Response: File stream.
+Update Paper (Author/Admin):
+PUT /api/papers/{paperId}
+Description: Author updates their paper (if status allows for revision) or Admin updates any paper. (May include new file upload).
+Request Body: FormData with updated metadata and/or new paper file.
+Response: Updated ResearchPaper object.
+Update Paper Status (Admin/System):
+PATCH /api/papers/{paperId}/status
+Description: Admin or system updates the status of a paper.
+Request Body: { "status": "UNDER_REVIEW", "rejectionRemark": "...", "autoDeleteDate": "..." }
+Response: Updated ResearchPaper object.
+Withdraw Paper (Author):
+PATCH /api/papers/{paperId}/withdraw
+Description: Author withdraws their submitted paper. Sets status to WITHDRAWN.
+Response: Updated ResearchPaper object.
+Delete Paper (Admin):
+DELETE /api/papers/{paperId}
+Description: Admin deletes a research paper (soft or hard delete based on policy).
+Response: Success message.
+🧑‍🏫 Paper Advisor Management (Linking Papers and Advisors)
+Assign Advisors to Paper (Author during submission, or Admin):
+POST /api/papers/{paperId}/advisors
+Description: Assign one or more faculty advisors to a paper. This creates PaperAdvisor entries.
+Request Body: { "advisorIds": ["userId1", "userId2"] }
+Response: List of created PaperAdvisor objects or success message.
+Get Advisors for a Paper:
+GET /api/papers/{paperId}/advisors
+Description: Retrieve the list of assigned advisors for a specific paper.
+Response: List of PaperAdvisor objects (populated with advisor user details).
+Advisor: Update Acceptance Status for a Paper Assignment:
+PATCH /api/paper-advisors/{paperAdvisorId}/decision
+Description: An assigned faculty advisor accepts or rejects the advisory role for a paper.
+Request Body: { "acceptanceStatus": "ACCEPTED" | "REJECTED" }
+Response: Updated PaperAdvisor object.
+Admin: List All Paper-Advisor Assignments (for overview):
+GET /api/paper-advisors
+Description: Admin retrieves a list of all paper-advisor assignments, possibly with filters.
+Query Params: ?paperId=..., ?advisorId=..., ?acceptanceStatus=PENDING
+Response: List of PaperAdvisor objects.
+Admin: Remove an Advisor from a Paper:
+DELETE /api/paper-advisors/{paperAdvisorId} (or DELETE /api/papers/{paperId}/advisors/{advisorUserId})
+Description: Admin removes an assigned advisor from a paper.
+Response: Success message.
+🌟 Review Management
+Submit Review for a Paper (Reviewer: Faculty/Admin):
+POST /api/papers/{paperId}/reviews
+Description: A reviewer submits their review for a paper. reviewerId from authenticated user.
+Request Body: { "rating": 5, "comment": "Excellent work!", "status": "COMPLETED" }
+Response: Created Review object.
+Get All Reviews for a Paper:
+GET /api/papers/{paperId}/reviews
+Description: Retrieve all reviews submitted for a specific paper.
+Response: List of Review objects.
+Get Specific Review Details:
+GET /api/reviews/{reviewId}
+Description: Retrieve details of a single review.
+Response: Review object.
+Update Review (Reviewer, if status allows):
+PUT /api/reviews/{reviewId}
+Description: Reviewer updates their submitted review (e.g., if it's editable before a certain stage).
+Request Body: { "rating": 4, "comment": "Updated comment.", "status": "COMPLETED" }
+Response: Updated Review object.
+Admin: List All Reviews (for overview):
+GET /api/reviews
+Description: Admin retrieves a list of all reviews, possibly with filters.
+Query Params: ?paperId=..., ?reviewerId=..., ?status=PENDING
+Response: List of Review objects.
+Delete Review (Admin):
+DELETE /api/reviews/{reviewId}
+Description: Admin deletes a review.
+Response: Success message.
+🔔 Notification Management
+Get Notifications for User:
+GET /api/notifications (assuming recipientId is derived from authenticated user)
+Description: Retrieve notifications for the currently authenticated user.
+Query Params: ?isRead=false, ?page=1, ?limit=10
+Response: Paginated list of Notification objects.
+Mark Notification as Read:
+PATCH /api/notifications/{notificationId}/read
+Description: Mark a specific notification as read.
+Request Body: { "isRead": true }
+Response: Updated Notification object.
+Mark All Notifications as Read for User:
+PATCH /api/notifications/mark-all-read
+Description: Mark all unread notifications for the authenticated user as read.
+Response: Success message or count of updated notifications.
+Admin: Create General Notification:
+POST /api/notifications/admin-broadcast (or a more specific endpoint if it targets groups)
+Description: Admin sends a broadcast or general notification.
+Request Body: { "message": "System maintenance soon.", "type": "GENERAL", "recipientIds": ["userId1", "all_students"] } (recipient handling needs careful design)
+Response: Created Notification object(s).
+Delete Notification (User):
+DELETE /api/notifications/{notificationId}
+Description: User deletes one of their notifications.
+Response: Success message.
+📁 Next.js App Router API Structure
+Based on the endpoints above, here's how your app/api/ directory structure might look using Next.js App Router conventions:
+
+app/
+└── api/
+    ├── users/
+    │   ├── route.ts                            // GET (List Users)
+    │   ├── [userId]/
+    │   │   ├── route.ts                        // GET (Specific User)
+    │   │   ├── verify/
+    │   │   │   └── route.ts                    // PATCH (Verify User)
+    │   │   ├── type/
+    │   │   │   └── route.ts                    // PATCH (Change User Type)
+    │   │   ├── papers/
+    │   │   │   └── route.ts                    // GET (Papers by User)
+    │   │   ├── reviews/
+    │   │   │   └── route.ts                    // GET (Reviews by User)
+    │   │   └── assigned-papers/
+    │   │       └── route.ts                    // GET (Papers assigned to user as advisor)
+    │
+    ├── user-details/                           // For UserDetails model if needed distinctly
+    │   ├── route.ts                            // POST, GET
+    │   └── [detailsId]/
+    │       └── route.ts                        // PUT, DELETE
+    │
+    ├── news/
+    │   ├── route.ts                            // POST (Create News), GET (List News)
+    │   └── [newsId]/
+    │       └── route.ts                        // GET (Specific News), PUT (Update), DELETE
+    │
+    ├── papers/
+    │   ├── route.ts                            // POST (Submit Paper), GET (List Papers)
+    │   └── [paperId]/
+    │       ├── route.ts                        // GET (Specific Paper), PUT (Update Paper)
+    │       ├── download/
+    │       │   └── route.ts                    // GET (Download File)
+    │       ├── status/
+    │       │   └── route.ts                    // PATCH (Update Status)
+    │       ├── withdraw/
+    │       │   └── route.ts                    // PATCH (Withdraw Paper)
+    │       ├── advisors/                       // Manages advisors for a specific paper
+    │       │   └── route.ts                    // POST (Assign Advisors), GET (List Advisors for Paper)
+    │       └── reviews/
+    │           └── route.ts                    // POST (Submit Review), GET (List Reviews for Paper)
+    │
+    ├── paper-advisors/                         // For direct actions on PaperAdvisor entries
+    │   ├── route.ts                            // GET (Admin list all assignments)
+    │   └── [paperAdvisorId]/
+    │       ├── decision/
+    │       │   └── route.ts                    // PATCH (Advisor accepts/rejects)
+    │       └── route.ts                        // DELETE (Admin removes assignment) - if not DELETE /api/papers/{paperId}/advisors/{advisorUserId}
+    │
+    ├── reviews/
+    │   ├── route.ts                            // GET (Admin list all reviews)
+    │   └── [reviewId]/
+    │       └── route.ts                        // GET (Specific Review), PUT (Update), DELETE (Admin delete)
+    │
+    └── notifications/
+        ├── route.ts                            // GET (User's Notifications)
+        ├── mark-all-read/
+        │   └── route.ts                        // PATCH (Mark all as read)
+        ├── admin-broadcast/                    // Example for admin creating notifications
+        │   └── route.ts                        // POST
+        └── [notificationId]/
+            ├── route.ts                        // DELETE (User deletes notification)
+            └── read/
+                └── route.ts                    // PATCH (Mark one as read)

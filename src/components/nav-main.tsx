@@ -1,7 +1,6 @@
 "use client"
 
 import { ChevronRight, type LucideIcon } from "lucide-react"
-
 import {
   Collapsible,
   CollapsibleContent,
@@ -17,26 +16,35 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
+import { DashboardItems, User } from "@/types/userType"
+import Link from "next/link"
 
-export function NavMain({
-  items,
-}: {
-  items: {
-    title: string
-    url: string
-    icon?: LucideIcon
-    isActive?: boolean
-    items?: {
-      title: string
-      url: string
-    }[]
-  }[]
-}) {
+
+
+export function NavMain(
+ 
+  user: User
+) {
+  const items = DashboardItems
+  const filteredItems = items.filter((item) => {
+    if (user.userType === "ADMIN") {
+      return true
+    }
+    if (user.userType === "FACULTY") {
+      return !item.access || item.access.includes("FACULTY")
+    }
+    if (user.userType === "STUDENT") {
+      return !item.access
+    }
+    return false
+  
+  })
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) => (
+        {filteredItems.map((item) => (
           <Collapsible
             key={item.title}
             asChild
@@ -56,9 +64,10 @@ export function NavMain({
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton asChild>
-                        <a href={subItem.url}>
+                        <Link href={`/${subItem.url}`}>
+                          {"icon" in subItem && subItem.icon && <subItem.icon />}
                           <span>{subItem.title}</span>
-                        </a>
+                        </Link>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   ))}
