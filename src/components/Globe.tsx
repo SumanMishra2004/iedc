@@ -18,7 +18,7 @@ type GeoFeature = {
   };
 };
 
-const World: React.FC = ({scrollValue:int}) => {
+const World: React.FC = () => {
   const globeRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 700, height: 700 });
