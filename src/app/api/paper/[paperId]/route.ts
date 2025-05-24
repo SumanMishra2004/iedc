@@ -5,10 +5,10 @@ const prisma = new PrismaClient();
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { paperId: string } }
+  { params }: { params: Promise<{ paperId: string }> }
 ) {
   try {
-    const { paperId } = params;
+    const { paperId } = await params;
 
     const paper = await prisma.researchPaper.findUnique({
       where: { id: paperId },
@@ -84,10 +84,10 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { paperId: string } }
+  { params }: { params:Promise<{ paperId: string }> }
 ) {
   try {
-    const { paperId } = params;
+    const { paperId } =await params;
     const body = await request.json();
 
     const allowedUpdates = [
@@ -166,10 +166,10 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { paperId: string } }
+  { params }: { params: Promise<{ paperId: string }>}
 ) {
   try {
-    const { paperId } = params;
+    const { paperId } =await  params;
 
     await prisma.paperAuthorContribution.deleteMany({
       where: { paperId },
