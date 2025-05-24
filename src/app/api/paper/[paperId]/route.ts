@@ -1,15 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, PaperStatus } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// GET /api/paper/[paperId]
 export async function GET(
-  request: Request,
-  context: { params: { paperId: string } }
+  request: NextRequest,
+  { params }: { params: { paperId: string } }
 ) {
   try {
-    const { paperId } = context.params;
+    const { paperId } = params;
 
     const paper = await prisma.researchPaper.findUnique({
       where: { id: paperId },
@@ -76,17 +75,19 @@ export async function GET(
     return NextResponse.json(response);
   } catch (error) {
     console.error("Failed to fetch paper:", error);
-    return NextResponse.json({ error: "Failed to fetch paper" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch paper" },
+      { status: 500 }
+    );
   }
 }
 
-// PATCH /api/paper/[paperId]
 export async function PATCH(
-  request: Request,
-  context: { params: { paperId: string } }
+  request: NextRequest,
+  { params }: { params: { paperId: string } }
 ) {
   try {
-    const { paperId } = context.params;
+    const { paperId } = params;
     const body = await request.json();
 
     const allowedUpdates = [
@@ -110,7 +111,10 @@ export async function PATCH(
       dataToUpdate.status &&
       !Object.values(PaperStatus).includes(dataToUpdate.status)
     ) {
-      return NextResponse.json({ error: "Invalid paper status" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid paper status" },
+        { status: 400 }
+      );
     }
 
     const updatedPaper = await prisma.researchPaper.update({
@@ -153,17 +157,19 @@ export async function PATCH(
     return NextResponse.json(response);
   } catch (error) {
     console.error("Failed to update paper:", error);
-    return NextResponse.json({ error: "Failed to update paper" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to update paper" },
+      { status: 500 }
+    );
   }
 }
 
-// DELETE /api/paper/[paperId]
 export async function DELETE(
-  request: Request,
-  context: { params: { paperId: string } }
+  request: NextRequest,
+  { params }: { params: { paperId: string } }
 ) {
   try {
-    const { paperId } = context.params;
+    const { paperId } = params;
 
     await prisma.paperAuthorContribution.deleteMany({
       where: { paperId },
@@ -176,6 +182,9 @@ export async function DELETE(
     return NextResponse.json({ message: "Paper deleted successfully" });
   } catch (error) {
     console.error("Failed to delete paper:", error);
-    return NextResponse.json({ error: "Failed to delete paper" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to delete paper" },
+      { status: 500 }
+    );
   }
 }
