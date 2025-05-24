@@ -1,15 +1,13 @@
-"use client";
+import React from 'react'
 
+import ScrollPathAnimation from './_svgpath/Animation'
 
-// import your guard
-
-export default function Home() {
- 
-
+function Home() {
   return (
-  
-    <div>
-hi
+    <div className='w-screen h-[200vh]'>
+      <ScrollPathAnimation/>
     </div>
-  );
+  )
 }
+
+export default Home

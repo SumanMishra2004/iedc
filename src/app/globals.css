@@ -2,7 +2,13 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
-
+html,body{
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  margin: 0;
+  padding: 0;
+}
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

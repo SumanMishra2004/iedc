@@ -43,7 +43,7 @@ export const DashboardItems = [
     items: [
       { title: "Home", url: "/",icon:Home },
       { title: "Data Graph", url: "dashboard" ,icon:GitGraph},
-      { title: "Upload Paper", url: "dashboard/upload",icon: Upload },
+      { title: "Upload Paper", url: "dashboard/paper/upload",icon: Upload },
       { title: "Paper status", url: "dashboard/status",icon: Stamp },
     ],
   },
