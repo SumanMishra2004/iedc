@@ -58,9 +58,9 @@ enum NotificationType {
 // ─────────────────────────────────────────────────────────────
 
 model User {
-  id                     String      @id @default(uuid())
-  name                   String
-  email                  String      @unique
+  id                     String    @id @default(uuid())
+  name                   String    @unique
+  email                  String    @unique
   password               String?
   degree                 String?
   year                   Int?
@@ -69,29 +69,29 @@ model User {
   subjectArea            String?
   position               String?
   profileImage           String?
-  resetToken             String?     @unique
+  resetToken             String?   @unique
   resetTokenExpiry       DateTime?
-  isVerified             Boolean     @default(false)
-  userType               UserType    @default(STUDENT)
+  isVerified             Boolean   @default(false)
+  userType               UserType  @default(STUDENT)
   verificationCode       String?
   verificationCodeExpiry DateTime?
-  createdAt              DateTime    @default(now())
-  updatedAt              DateTime    @updatedAt
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
-  performedReviews       Review[]
-  assignedAdvisorPapers  PaperAdvisor[]  @relation("AssignedAdvisor")
-  notificationsReceived  Notification[]  @relation("RecipientNotifications")
-  reviewedPapers         ResearchPaper[] @relation("PaperReviewer", fields: [], references: [])
-  paperContributions     PaperAuthorContribution[]
+  performedReviews      Review[]
+  assignedAdvisorPapers PaperAdvisor[]  @relation("AssignedAdvisor")
+  notificationsReceived Notification[]  @relation("RecipientNotifications")
+  reviewedPapers        ResearchPaper[] @relation("PaperReviewer")
 }
 
 model UserDetails {
   id       String   @id @default(uuid())
   email    String   @unique
+  name     String   @unique
   userType UserType
 }
 
-model LatestNews {
+model latestNews {
   id                 String   @id @default(uuid())
   title              String
   content            String
@@ -101,76 +101,61 @@ model LatestNews {
 }
 
 model ResearchPaper {
-  id              String        @id @default(uuid())
+  id              String      @id @default(uuid())
   title           String
   abstract        String
   filePath        String
-  currentVersion  Int           @default(1)
-  authorsInfo     Json          @default("[]") // fallback for frontend display
-  reviewerId      String
-  reviewer        User          @relation("PaperReviewer", fields: [reviewerId], references: [id])
-  status          PaperStatus   @default(UPLOAD)
+  currentVersion  Int         @default(1)
+  authorNames     String[]
   keywords        String[]
-  submissionDate  DateTime      @default(now())
-  lastUpdated     DateTime      @updatedAt
+  submissionDate  DateTime    @default(now())
+  lastUpdated     DateTime    @updatedAt
   rejectionRemark String?
   rejectionDate   DateTime?
+  reviewerName    String
+  reviewer        User        @relation("PaperReviewer", fields: [reviewerName], references: [name])
+  status          PaperStatus @default(UPLOAD)
+  facultyAdvisors String[] // <-- Add this
 
-  facultyAdvisors PaperAdvisor[]
-  reviews         Review[]
-  notifications   Notification[]
-  contributors    PaperAuthorContribution[]
+  reviews       Review[]
+  notifications Notification[]
+  paperAdvisors PaperAdvisor[]
 }
 
 model PaperAdvisor {
-  id                  String                  @id @default(uuid())
-  paperId             String
-  advisorId           String
-  paper               ResearchPaper           @relation(fields: [paperId], references: [id] ,onDelete: Cascade)
-  advisor             User                    @relation("AssignedAdvisor", fields: [advisorId], references: [id])
-  acceptanceStatus    AdvisorAcceptanceStatus @default(PENDING)
-  assignedDate        DateTime                @default(now())
-  decisionDate        DateTime?
-  // remark           String? // Uncomment if needed
+  id               String                  @id @default(uuid())
+  paperId          String
+  advisorId        String
+  paper            ResearchPaper           @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  advisor          User                    @relation("AssignedAdvisor", fields: [advisorId], references: [id])
+  acceptanceStatus AdvisorAcceptanceStatus @default(PENDING)
+  assignedDate     DateTime                @default(now())
+  decisionDate     DateTime?
 }
 
 model Review {
-  id          String       @id @default(uuid())
-  rating      Int?
-  comment     String
-  status      ReviewStatus
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  reviewerId  String
-  paperId     String
+  id         String       @id @default(uuid())
+  rating     Int?
+  comment    String
+  status     ReviewStatus
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  reviewerId String
+  paperId    String
 
-  reviewer    User         @relation(fields: [reviewerId], references: [id])
-  paper       ResearchPaper @relation(fields: [paperId], references: [id])
+  reviewer User          @relation(fields: [reviewerId], references: [id])
+  paper    ResearchPaper @relation(fields: [paperId], references: [id])
 }
 
 model Notification {
-  id           String           @id @default(uuid())
-  message      String
-  type         NotificationType @default(GENERAL)
-  isRead       Boolean          @default(false)
-  createdAt    DateTime         @default(now())
-  recipientId  String
-  paperId      String?
+  id          String           @id @default(uuid())
+  message     String
+  type        NotificationType @default(GENERAL)
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  recipientId String
+  paperId     String?
 
-  recipient    User             @relation("RecipientNotifications", fields: [recipientId], references: [id])
-  paper        ResearchPaper?   @relation(fields: [paperId], references: [id])
-}
-
-// ─────────────────────────────────────────────────────────────
-// New Join Table: PaperAuthorContribution
-// ─────────────────────────────────────────────────────────────
-
-model PaperAuthorContribution {
-  id            String         @id @default(uuid())
-  paperId       String
-  userId        String
-  contribution  String         // E.g., "Abstract", "Methodology", etc.
-
-  paper         ResearchPaper  @relation(fields: [paperId], references: [id])
-  user          User           @relation(fields: [userId], references: [id])
+  recipient User           @relation("RecipientNotifications", fields: [recipientId], references: [id])
+  paper     ResearchPaper? @relation(fields: [paperId], references: [id])
 }

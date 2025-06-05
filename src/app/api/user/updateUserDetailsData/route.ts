@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { email, userType } = body;
+  const { email, userType ,name} = body;
 
   if (!email || (typeof email !== "string" )) {
     return new Response(JSON.stringify({ message: "Invalid email(s) provided" }), { status: 400 });
@@ -26,11 +26,11 @@ export async function POST(req: NextRequest) {
     
     const   result = await prisma.userDetails.update({
         where: { email },
-        data: { userType },
+        data: { userType,name:name.toLowerCase().trim() },
       });
     await prisma.user.update({
       where: { email },
-      data: { userType },
+      data: { userType,name:name.toLowerCase().trim() },
     });
 
     return new Response(JSON.stringify({ success: true, result }), { status: 200 });

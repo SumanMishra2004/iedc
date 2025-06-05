@@ -1,10 +1,12 @@
-import CredentialsProvider from "next-auth/providers/credentials";
-import prisma from "@/lib/prisma";
-import { comparePassword } from "@/utils/hash";
-import { NextAuthOptions } from "next-auth";
+import GoogleProvider from "next-auth/providers/google"
+import CredentialsProvider from "next-auth/providers/credentials"
+import prisma from "@/lib/prisma"
+import { comparePassword } from "@/utils/hash"
+import { NextAuthOptions } from "next-auth"
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    // Credentials Provider
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -29,19 +31,16 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email },
         });
 
-
-      console.log("User details:", userDetails);
-      
-
-        if(userDetails){
+        if (userDetails) {
           await prisma.user.update({
-            where:{email:credentials.email},
-            data:{
-              userType:userDetails.userType,
-              isVerified:true,
-            }
-          })
+            where: { email: credentials.email },
+            data: {
+              userType: userDetails.userType,
+              isVerified: true,
+            },
+          });
         }
+
         return {
           id: user.id,
           email: user.email,
@@ -50,7 +49,12 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
-    // other providers, e.g. GoogleProvider here
+
+    // Google Provider
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
   ],
 
   session: {
@@ -59,28 +63,57 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
+    async jwt({ token, user, account }) {
+      // Handle Google login first time
+      if (user && account?.provider === "google") {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email! },
+        });
+
+        if (!existingUser) {
+          // Create new user on first Google login
+          const newUser = await prisma.user.create({
+            data: {
+              email: user.email!,
+              name: user.name?.toLowerCase().trim() || "Unnamed",
+              userType: "STUDENT", // Default userType
+              isVerified: true,
+              profileImage: user.image,
+            },
+          });
+          token.id = newUser.id;
+          token.userType = newUser.userType;
+        } else {
+          token.id = existingUser.id;
+          token.userType = existingUser.userType;
+        }
+
+        token.email = user.email!;
+        token.name = user.name!;
+      }
+
+      // Credentials login
+      if (user && account?.provider === "credentials") {
         token.id = user.id;
         token.email = user.email;
         token.userType = user.userType;
         token.name = user.name;
       }
+
       return token;
     },
 
     async session({ session, token }) {
-  return {
-    ...session,
-    user: {
-      id: token.id as string,
-      email: token.email as string,
-      name: token.name as string,
-      userType: token.userType as string,
+      return {
+        ...session,
+        user: {
+          id: token.id as string,
+          email: token.email as string,
+          name: token.name as string,
+          userType: token.userType as string,
+        },
+      };
     },
-  };
-}
-
   },
 
   pages: {

@@ -18,6 +18,7 @@ import { ArrowDownWideNarrow } from 'lucide-react';
 // Zod schema
 const userTypeSchema = z.object({
   email: z.string().email({ message: 'Invalid email' }),
+  name: z.string().min(1, { message: 'Name is required' }),
   userType: z.enum(['FACULTY', 'ADMIN'], {
     errorMap: () => ({ message: 'User type must be FACULTY or ADMIN' }),
   }),
@@ -25,10 +26,11 @@ const userTypeSchema = z.object({
 
 function UserType_add_input() {
   const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [userType, setUserType] = useState('');
 
   const handleSubmit = async () => {
-    const result = userTypeSchema.safeParse({ email, userType });
+    const result = userTypeSchema.safeParse({ email, userType,name });
 
     if (!result.success) {
       result.error.errors.forEach(err => toast.error(err.message));
@@ -39,10 +41,12 @@ function UserType_add_input() {
       const res = await axios.post('/api/user/createUser', {
         email,
         userType,
+        name: name.toLowerCase().trim(),
       });
       toast.success('User added successfully!');
       setEmail('');
       setUserType('');
+      setName('');
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Error adding user');
     }
@@ -55,6 +59,13 @@ function UserType_add_input() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder='Enter email'
+        className='w-[40%] min-w-[22rem] h-10'
+      />
+      <Input
+        type='text'
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder='Enter Name'
         className='w-[40%] min-w-[22rem] h-10'
       />
         <DropdownMenu>

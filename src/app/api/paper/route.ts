@@ -1,106 +1,98 @@
-import { PrismaClient, $Enums, User } from '@prisma/client';
-import { NextResponse } from 'next/server';
-
-const prisma = new PrismaClient();
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+
     const {
       title,
       abstract,
       filePath,
       keywords,
-      reviewer,
+      authorNames,
+      reviewerName,
       facultyAdvisors,
-      students,
     } = body;
 
-    // Validation (basic example)
+    // Basic validation
     if (
       !title ||
       !abstract ||
       !filePath ||
-      !keywords?.length ||
-      !reviewer?.email ||
-      !reviewer?.name ||
-      !facultyAdvisors?.length ||
-      !students?.length
+      !Array.isArray(keywords) ||
+      !Array.isArray(authorNames) ||
+      !reviewerName ||
+      !Array.isArray(facultyAdvisors)
     ) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      return NextResponse.json({ message: "Invalid input" }, { status: 400 });
     }
 
-    // 1. Find reviewer user
-    const reviewerUser = await prisma.user.findUnique({
-      where: { email: reviewer.email },
+    // Find reviewer by name (from User table)
+    const reviewer = await prisma.user.findUnique({
+      where: { name: reviewerName },
     });
-    if (!reviewerUser) {
-      return NextResponse.json({ error: 'Reviewer not found' }, { status: 400 });
+
+    if (!reviewer) {
+      return NextResponse.json(
+        { message: `Reviewer ${reviewerName} not found.` },
+        { status: 404 }
+      );
     }
 
-    // 2. Find faculty advisors users
+    // Find all faculty advisors by name (from User table)
     const advisorUsers = [];
-    for (const adv of facultyAdvisors) {
-      const advisor = await prisma.user.findUnique({ where: { email: adv.email } });
+    for (const advisorName of facultyAdvisors) {
+      const advisor = await prisma.user.findUnique({
+        where: { name: advisorName },
+      });
+
       if (!advisor) {
-        return NextResponse.json({ error: `Advisor not found: ${adv.email}` }, { status: 400 });
+        return NextResponse.json(
+          { message: `Advisor ${advisorName} not found.` },
+          { status: 404 }
+        );
       }
+
       advisorUsers.push(advisor);
     }
 
-    // 3. Find student users
-    const studentUsers: User[] = [];
-    for (const student of students) {
-      const stu = await prisma.user.findUnique({ where: { email: student.email } });
-      if (!stu) {
-        return NextResponse.json({ error: `Student not found: ${student.email}` }, { status: 400 });
-      }
-      studentUsers.push(stu);
-    }
-
-    // 4. Create ResearchPaper entry
+    // Create the research paper
     const paper = await prisma.researchPaper.create({
       data: {
         title,
         abstract,
         filePath,
-        keywords,
-        reviewerId: reviewerUser.id,
-        authorsInfo: students.map((s: any) => ({
-          name: s.name,
-          email: s.email,
-          contribution: s.contribution,
-        })),
+        keywords: { set: keywords },
+        authorNames: { set: authorNames },
+        reviewerName: reviewer.name,
+        facultyAdvisors: { set: facultyAdvisors },
       },
     });
 
-    // 5. Create PaperAuthorContribution records
-    await prisma.paperAuthorContribution.createMany({
-      data: students.map((s: any) => {
-        const matchedUser = studentUsers.find(u => u.email === s.email);
-        return {
-          paperId: paper.id,
-          userId: matchedUser!.id,
-          contribution: s.contribution,
-        };
-      }),
-    });
-
-    // 6. Create PaperAdvisor records for each faculty advisor
+    // Create PaperAdvisor entries (linking to User.id as advisorId)
     for (const advisor of advisorUsers) {
       await prisma.paperAdvisor.create({
         data: {
           paperId: paper.id,
           advisorId: advisor.id,
-          acceptanceStatus: 'PENDING',
-          assignedDate: new Date(),
+          acceptanceStatus: "PENDING",
         },
       });
     }
 
-    return NextResponse.json({ message: 'Paper uploaded successfully', paperId: paper.id }, { status: 201 });
-  } catch (error) {
-    console.error('[UPLOAD_PAPER_ERROR]', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ paper }, { status: 201 });
+
+  } catch (error: any) {
+    console.error("Error creating paper:", error);
+
+    if (process.env.NODE_ENV === "development") {
+      console.error("Stack trace:", error.stack);
+    }
+
+    return NextResponse.json(
+      { message: "Internal server error", error: error.message },
+      { status: 500 }
+    );
   }
 }

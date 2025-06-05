@@ -18,7 +18,12 @@ type GeoFeature = {
   };
 };
 
-const World: React.FC = () => {
+
+
+interface GlobeProps {
+  scrollValue: number;
+}
+const World: React.FC<GlobeProps> = ({ scrollValue }) => {
   const globeRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 700, height: 700 });
@@ -26,24 +31,30 @@ const World: React.FC = () => {
   const [allArcs, setAllArcs] = useState<any[]>([]);
   const [currentArcIndex, setCurrentArcIndex] = useState(0);
 
-  // Handle resizing
-  useEffect(() => {
-    const updateSize = () => {
-      if (containerRef.current) {
-        const { width } = containerRef.current.getBoundingClientRect();
-        const clampedWidth = Math.min(Math.max(width, 300), 700);
-        setSize({ width: clampedWidth, height: clampedWidth });
-      }
-    };
+useEffect(() => {
+  const updateSize = () => {
+    if (containerRef.current) {
+      // Calculate width based on scrollValue interpolation between 300 and 700
+      const minSize = 650;
+      const maxSize = 1000;
 
-    updateSize(); // Initialize size
+      // clamp scrollValue to [0,1] just in case
+      const clampedScroll = Math.min(Math.max(scrollValue, 0), 1);
 
-    const handleResize = () => requestAnimationFrame(updateSize);
-    window.addEventListener('resize', handleResize);
+      // interpolate size based on scrollValue
+      const interpolatedSize = minSize + (maxSize - minSize) * clampedScroll;
 
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+      setSize({ width: interpolatedSize, height: interpolatedSize });
+    }
+  };
 
+  updateSize();
+
+  const handleResize = () => requestAnimationFrame(updateSize);
+  window.addEventListener('resize', handleResize);
+
+  return () => window.removeEventListener('resize', handleResize);
+}, [scrollValue]);
   // Load data and setup globe
   useEffect(() => {
     const loadData = async () => {
@@ -173,9 +184,12 @@ const World: React.FC = () => {
   };
 
   return (
+    <div style={{ position: 'relative', zIndex: 20 }}>
+
+   
     <div
       ref={containerRef}
-      className=" w-fit aspect-square overflow-hidden"
+      className=" w-fit aspect-square overflow-hidden z-20 relative"
     >
       <Globe
         ref={globeRef}
@@ -200,7 +214,7 @@ const World: React.FC = () => {
         arcDashAnimateTime={4000}
         animateIn={true}
       />
-    </div>
+    </div> </div>
   );
 };
 

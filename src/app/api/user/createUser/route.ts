@@ -17,15 +17,15 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { email, userType } = body;
+  const { email, userType,name } = body;
 
-  if (!email || !["FACULTY", "ADMIN"].includes(userType)) {
+  if (!email || !["FACULTY", "ADMIN"].includes(userType||!name)) {
     return NextResponse.json({ message: "Invalid input" }, { status: 400 });
   }
 
   try {
     const entry = await prisma.userDetails.create({
-      data: { email, userType },
+      data: { email, userType,name:name.toLowerCase().trim() },  
     });
 
     return NextResponse.json(entry, { status: 201 });

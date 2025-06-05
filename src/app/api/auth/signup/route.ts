@@ -47,9 +47,9 @@ export async function POST(req: Request) {
   await prisma.user.create({
     data: {
       email,
-      name,
+      name: name.toLowerCase().trim(),
       password: hashedPassword,
-      profileImage:"https://www.pngfind.com/pngs/m/610-6104451_image-placeholder-png-user-profile-placeholder-image-png.png",
+      profileImage:"/profileImage.png",
       isVerified: false,
       verificationCode: otp,
       verificationCodeExpiry: new Date(Date.now() + 1000 * 60 * 60), // 1 hour
